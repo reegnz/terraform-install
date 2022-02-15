@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+XDG_CACHE_HOME="${XDG_CACHE_HOME:-${XDG_HOME:-${HOME}}/.cache}"
+TF_INSTALL_VERSIONS_DIR="${XDG_CACHE_HOME}/terraform/versions"
+TF_INSTALL_CHECK_SUM="${TF_INSTALL_CHECK_SUM:-1}"
+TF_INSTALL_CHECK_GPG="${TF_INSTALL_CHECK_GPG:-0}"
+
+find_up() {
+    name="${1}"
+    search_path="${PWD}"
+    while [[ "${search_path}" != "" ]]; do
+        if [[ -f "${search_path}/${name}" ]]; then
+            echo "${search_path}/${name}"
+            return 0
+        fi
+        search_path="${search_path%/*}"
+    done
+}
+
+version_file="$(find_up ".terraform-version")"
+
+if [[ -z "${version_file}" ]]; then
+    echo "No .terraform-version file found." >&2
+    exit 100
+fi
+
+version=$(< "${version_file}")
+
+if [[ -z "${version}" ]]; then
+    echo "No version defined in version file." >&2
+    exit 101
+fi
+
+if [[ -f "${TF_INSTALL_VERSIONS_DIR}/${version}/terraform" ]]; then
+    echo "Terraform ${version} already installed at ${TF_INSTALL_VERSIONS_DIR}/${version}" >&2
+    exit 0
+fi
+
+# Determine OS
+case $(uname -s) in
+Darwin*) os="darwin" ;;
+MSYS_NT* | CYGWIN_NT* | MINGW64*) os="windows" ;;
+FreeBSD*) os="freebsd" ;;
+OpenBSD*) os="openbsd" ;;
+Linux*) os="linux" ;;
+*)
+    echo "Unsupported OS: $(uname -s)" >&2
+    exit 105
+    ;;
+esac
+
+# Determine Arch
+case $(uname -m) in
+x86_64 | amd64) arch="amd64" ;;
+arm64 | aarch64) arch="arm64" ;;
+*)
+    echo "Unsupported Arch: $(uname -m)" >&2
+    exit 106
+    ;;
+esac
+
+mkdir -p "${TF_INSTALL_VERSIONS_DIR}/${version}"
+tempdir="$(mktemp -d)"
+#shellcheck disable=SC2064
+trap "rm -rf $tempdir" EXIT
+
+filename="terraform_${version}_${os}_${arch}.zip"
+url="https://releases.hashicorp.com/terraform/${version}/${filename}"
+echo "Downloading $url" >&2
+curl "$url" -# --output-dir "${tempdir}" -O
+
+# Verify sha256 checksum
+if [[ "${TF_INSTALL_CHECK_SUM}" != "0" ]]; then
+    if type sha256sum > /dev/null; then
+        OLD_PWD="${PWD}"
+        cd "${tempdir}"
+        sumfile_name="terraform_${version}_SHA256SUMS"
+        sumurl="https://releases.hashicorp.com/terraform/${version}/${sumfile_name}"
+        echo "Downloading $sumurl" >&2
+        curl "$sumurl" -# --output-dir "${tempdir}" -O
+
+        # Verify sum file signature
+        if [[ "${TF_INSTALL_CHECK_GPG}" != "0" ]]; then 
+            if type gpg > /dev/null; then
+                # import hashicorp key if not yet imported
+                curl https://keybase.io/hashicorp/pgp_keys.asc -s | gpg --import
+                sigfile_name="${sumfile_name}.sig"
+                sigurl="https://releases.hashicorp.com/terraform/${version}/${sigfile_name}"
+                echo "Downloading $sigurl" >&2
+                curl "$sigurl" -# --output-dir "${tempdir}" -O
+                gpg --verify "${sigfile_name}" "${sumfile_name}" 1>&2
+            fi
+        fi
+        echo "Verifying checksum" >&2
+        sha256sum -c "${sumfile_name}" --ignore-missing 1>&2
+        cd "${OLD_PWD}"
+    fi
+fi
+unzip -d "${TF_INSTALL_VERSIONS_DIR}/${version}" "${tempdir}/${filename}" >/dev/null
+echo "Terraform ${version} installed at ${TF_INSTALL_VERSIONS_DIR}/${version}/terraform" >&2
