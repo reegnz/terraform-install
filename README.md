@@ -4,6 +4,20 @@ A minimal terraform installer and transparent terraform wrapper.
 
 ## Installation
 
+### MacOS
+
+Install with homebrew.
+
+```sh
+brew tap reegnz/tap
+brew install terraform-install
+```
+
+You should uninstall or unlink terraform and tfenv first, as they are clashing on the `terraform`
+executable link.
+
+### Manual
+
 Put both scripts somewhere on your PATH, so that it shadows any existing
 terraform install, eg:
 
@@ -12,6 +26,12 @@ INSTALL_DIR="${HOME}/.local/bin"
 mkdir -p "${INSTALL_DIR}"
 curl -s https://raw.githubusercontent.com/reegnz/terraform-install/v1.0.0/terraform  "${INSTALL_DIR}/terraform"
 curl -s https://raw.githubusercontent.com/reegnz/terraform-install/v1.0.0/terraform-install > "${INSTALL_DIR}/terraform-install"
+```
+
+Make sure you have `$HOME/.local/bin` on your path, eg. put this in your .bashrc or .zshrc: 
+
+```bash
+PATH=$HOME/.local/bin:$PATH
 ```
 
 ## Usage
