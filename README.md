@@ -57,6 +57,12 @@ Once the desired version is installed, you can use the `terraform` wrapper to
 pick up the correct binary based on the version file, and invoke the cached 
 binary passing all args.
 
+
+### Defining a global version
+
+Just put the default version you intend to use into  `$HOME/.terraform-version` and the
+wrapper will pick it up as long as you're running the commands under `$HOME`.
+
 ### Environment variables
 
 - `TF_INSTALL_VERSIONS_DIR` - install terraform versions into a custom
