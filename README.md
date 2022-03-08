@@ -57,6 +57,25 @@ Once the desired version is installed, you can use the `terraform` wrapper to
 pick up the correct binary based on the version file, and invoke the cached 
 binary passing all args.
 
+## Usage with [direnv](https://direnv.net/)
+
+Using direnv you can avoid using the wrapper altogether, by adding the
+following to your `.envrc`
+
+```bashrc
+use_terraform() {
+terraform="$(./terraform-path)"
+PATH_add "${terraform%/*}"
+}
+
+use terraform
+```
+
+This way any wrapper overhead is eliminated as the path to the `terraform`
+binary is evaluated only once, when entering the directory.
+Any subsequent calls to `terraform` use the selected terraform binary
+directly without any wrapping.
+
 
 ### Defining a global version
 
@@ -73,4 +92,3 @@ wrapper will pick it up as long as you're running the commands under `$HOME`.
 - `TF_INSTALL_CHECK_GPG` - if set to 1, downloads hashicorp GPG key from
   keybase and then performs a signature validation on the SHA256SUMS file
   before checking the checksum. Default: 0
-

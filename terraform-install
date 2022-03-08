@@ -18,22 +18,29 @@ find_up() {
     done
 }
 
-version_file="$(find_up ".terraform-version")"
+get_terraform_version() {
+    local version_file="$(find_up ".terraform-version")"
 
-if [[ -z "${version_file}" ]]; then
-    echo "No .terraform-version file found." >&2
-    exit 100
-fi
+    if [[ -z "${version_file}" ]]; then
+        echo "TERRAFORM-PATH: No .terraform-version file found." >&2
+        exit 100
+    fi
 
-version=$(< "${version_file}")
+    local version=$(< "${version_file}")
 
-if [[ -z "${version}" ]]; then
-    echo "No version defined in version file." >&2
-    exit 101
-fi
+    if [[ -z "${version}" ]]; then
+        echo "TERRAFORM-PATH: No version defined in version file." >&2
+        exit 101
+    fi
+    echo "${version}"
+}
 
-if [[ -f "${TF_INSTALL_VERSIONS_DIR}/${version}/terraform" ]]; then
-    echo "Terraform ${version} already installed at ${TF_INSTALL_VERSIONS_DIR}/${version}" >&2
+version=$(get_terraform_version)
+TF_INSTALL_DIR="${TF_INSTALL_VERSIONS_DIR}/${version}"
+if [[ -f "${TF_INSTALL_DIR}/terraform" ]]; then
+    if [[ "${TF_INSTALL_AUTO:-}" != "true" ]]; then
+        echo "Terraform ${version} already installed at ${TF_INSTALL_VERSIONS_DIR}/${version}" >&2
+    fi
     exit 0
 fi
 
@@ -60,7 +67,7 @@ arm64 | aarch64) arch="arm64" ;;
     ;;
 esac
 
-mkdir -p "${TF_INSTALL_VERSIONS_DIR}/${version}"
+mkdir -p "${TF_INSTALL_DIR}"
 tempdir="$(mktemp -d)"
 #shellcheck disable=SC2064
 trap "rm -rf $tempdir" EXIT

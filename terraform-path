@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+XDG_CACHE_HOME="${XDG_CACHE_HOME:-${XDG_HOME:-${HOME}}/.cache}"
+TF_INSTALL_VERSIONS_DIR="${XDG_CACHE_HOME}/terraform/versions"
+
+find_up() {
+    name="${1}"
+    search_path="${PWD}"
+    while [[ "${search_path}" != "" ]]; do
+        if [[ -f "${search_path}/${name}" ]]; then
+            echo "${search_path}/${name}"
+            return 0
+        fi
+        search_path="${search_path%/*}"
+    done
+}
+
+get_terraform_version() {
+    local version_file="$(find_up ".terraform-version")"
+
+    if [[ -z "${version_file}" ]]; then
+        echo "TERRAFORM-PATH: No .terraform-version file found." >&2
+        exit 100
+    fi
+
+    local version=$(< "${version_file}")
+
+    if [[ -z "${version}" ]]; then
+        echo "TERRAFORM-PATH: No version defined in version file." >&2
+        exit 101
+    fi
+    echo "${version}"
+}
+
+get_terraform_binary_path() {
+    local version=$(get_terraform_version)
+    TF_BINARY_PATH="${TF_INSTALL_VERSIONS_DIR}/${version}/terraform"
+
+    if [ ! -f "${TF_BINARY_PATH}" ]; then
+        if [ "${TF_INSTALL_AUTO:-}" == "true" ]; then
+                SCRIPT_DIR="${BASH_SOURCE[0]%/*}"
+                source "${SCRIPT_DIR}/terraform-path"
+                terraform-install
+        fi
+        if [ ! -f "${TF_BINARY_PATH}" ]; then
+            echo "TERRAFORM-PATH: Terraform ${version} executable not found." >&2
+            echo "TERRAFORM-PATH: You can install terraform by running 'terraform-install'" >&2
+            echo "TERRAFORM-PATH: To auto-install terraform, you can also set TF_INSTALL_AUTO=true" >&2
+            exit 102
+        fi
+    fi
+    echo "${TF_BINARY_PATH}"
+}
+
+# echo if invoked directly
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    get_terraform_binary_path
+fi
+
