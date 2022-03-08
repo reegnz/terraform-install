@@ -24,8 +24,9 @@ terraform install, eg:
 ```bash
 INSTALL_DIR="${HOME}/.local/bin"
 mkdir -p "${INSTALL_DIR}"
-curl -s https://raw.githubusercontent.com/reegnz/terraform-install/v1.0.0/terraform  "${INSTALL_DIR}/terraform"
-curl -s https://raw.githubusercontent.com/reegnz/terraform-install/v1.0.0/terraform-install > "${INSTALL_DIR}/terraform-install"
+curl -s https://raw.githubusercontent.com/reegnz/terraform-install/v1.2.0/terraform  "${INSTALL_DIR}/terraform"
+curl -s https://raw.githubusercontent.com/reegnz/terraform-install/v1.2.0/terraform-install > "${INSTALL_DIR}/terraform-install"
+curl -s https://raw.githubusercontent.com/reegnz/terraform-install/v1.2.0/terraform-path > "${INSTALL_DIR}/terraform-path"
 ```
 
 Make sure you have `$HOME/.local/bin` on your path, eg. put this in your .bashrc or .zshrc: 
