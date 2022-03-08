@@ -57,7 +57,21 @@ Once the desired version is installed, you can use the `terraform` wrapper to
 pick up the correct binary based on the version file, and invoke the cached 
 binary passing all args.
 
-## Usage with [direnv](https://direnv.net/)
+### Installing all versions for a directory
+
+`terraform-install` supports discovering all `.terraform-version` files in a
+directory tree and installing all discovered versions in a single run.
+
+```sh
+terraform-install --all
+```
+
+### Defining a global version
+
+Just put the default version you intend to use into  `$HOME/.terraform-version` and the
+wrapper will pick it up as long as you're running the commands under `$HOME`.
+
+### Usage with [direnv](https://direnv.net/)
 
 Using direnv you can avoid using the wrapper altogether, by adding the
 following to your `.envrc`
@@ -76,11 +90,10 @@ binary is evaluated only once, when entering the directory.
 Any subsequent calls to `terraform` use the selected terraform binary
 directly without any wrapping.
 
-
-### Defining a global version
-
-Just put the default version you intend to use into  `$HOME/.terraform-version` and the
-wrapper will pick it up as long as you're running the commands under `$HOME`.
+Note that this approach assumes you have the proper terraform versions installed.
+The installation takes far too long to run with direnv, so it's advised that
+you install the right terraform versions before you wire things up with
+direnv.
 
 ### Environment variables
 

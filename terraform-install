@@ -19,15 +19,14 @@ find_up() {
 }
 
 get_terraform_version() {
-    local version_file="$(find_up ".terraform-version")"
-
+    local version_file
+    version_file="$(find_up ".terraform-version")"
     if [[ -z "${version_file}" ]]; then
         echo "TERRAFORM-PATH: No .terraform-version file found." >&2
         exit 100
     fi
-
-    local version=$(< "${version_file}")
-
+    local version
+    version=$(< "${version_file}")
     if [[ -z "${version}" ]]; then
         echo "TERRAFORM-PATH: No version defined in version file." >&2
         exit 101
@@ -35,7 +34,51 @@ get_terraform_version() {
     echo "${version}"
 }
 
-version=$(get_terraform_version)
+arg=${1:-}
+case ${arg} in
+    -a|-all)
+        fd --hidden .terraform-version |
+            xargs cat | sort | uniq | awk 'NF' |
+            xargs -n 1 terraform-install
+        exit 0
+        ;;
+    -l|--list)
+        find "${TF_INSTALL_VERSIONS_DIR}" -mindepth 1 -maxdepth 1 -type d |
+            awk -F/ '{print $NF}' | sort -V
+        exit 0
+        ;;
+    -a|--list-all)
+        curl -sSf https://releases.hashicorp.com/terraform/ |
+            sed -E -n 's/.*terraform_([0-9]\.[0-9]\.[0-9]).*/\1/p' | sort -V
+        exit 0
+        ;;
+    -h|--help)
+        cat <<-EOL
+terraform-install [VERSION]
+[VERSION]  The version to install. 
+           If ommitted, .terraform-version is used.
+
+-a --all   Installs all versions defined in .terraform-version
+           files in the current folder and all subfolders
+-l --list  List installed versions
+--list-all List all installable versions
+-h --help this help
+EOL
+        exit 0
+        ;;
+    -*)
+        echo "Unsupported arg ${arg}. See --help for valid args." >&2
+        exit 1
+        ;;
+    *)
+        version=${arg}
+        ;;
+esac
+
+if [[ -z "${version:-}" ]]; then
+    # try to pick up version from .terraform-version file
+    version=$(get_terraform_version)
+fi
 TF_INSTALL_DIR="${TF_INSTALL_VERSIONS_DIR}/${version}"
 if [[ -f "${TF_INSTALL_DIR}/terraform" ]]; then
     if [[ "${TF_INSTALL_AUTO:-}" != "true" ]]; then
