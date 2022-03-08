@@ -79,7 +79,7 @@ following to your `.envrc`
 
 ```bashrc
 use_terraform() {
-terraform="$(./terraform-path)"
+terraform="$(terraform-path)"
 PATH_add "${terraform%/*}"
 }
 
